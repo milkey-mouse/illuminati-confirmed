@@ -1,14 +1,37 @@
 import cv2
 import math
+import time
 import numpy as np
 #capture = cv2.VideoCapture("space_weird_thing.mp4")
 capture = cv2.VideoCapture("dhmis.mp4")
-framethresh = []
+visualizing = False
+drawAllEdges = False
+framethresh = [(-200,-200)]
+future = time.time() + 1
+fps = 0
+triangles = 0
 while True:
+    if not visualizing:
+        if time.time() >= future:
+            future = time.time() + 1
+            print "fps: " + str(fps) + " triangles: " + str(triangles)
+            fps = 0
+            triangles = 0
+    if framethresh == [(-300,-300)]:
+        for i in range(1,30):
+            flag, frame = capture.read()
+            fps += 1
+            if flag == 0:
+                break
+        skipall = False
     if len(framethresh) == 0:
         for i in range(1,3):
-            capture.read()
+            flag, frame = capture.read()
+            fps += 1
+            if flag == 0:
+                break
     flag, frame = capture.read() #Flag returns 1 for success, 0 for failure. Frame is the currently processed frame
+    fps += 1
     newframethresh = []
     if flag == 0: #Something is wrong with your data, or the end of the video file was reached
         break
@@ -35,28 +58,34 @@ while True:
             max_length = max(dists)
             maxdist = (max_length/min_length)
             perimeter = cv2.arcLength(cnt,True)
-            if maxdist < 1.15 and (area / perimeter) > 5:
+            if maxdist < 1.2 and (area / perimeter) > 5:
                 color = (0,127,255)
                 for ellipse in framethresh:
                     y = pts[0][0]
-                    cv2.circle(frame, ellipse, 75, (128,255,128))
+                    if visualizing:
+                        cv2.circle(frame, ellipse, 75, (128,255,128))
                     if abs(math.hypot(ellipse[1] - ellipse[0], y[1] - y[0])) > 75:
                         color = (0,255,0)
-                        newframethresh = []
+                        triangles += 1
+                        newframethresh = [(-300,-300)]
                         framethresh = []
                         skipall = True
                         break
-                cv2.putText(frame, str(maxdist), (pts[0][0][0],pts[0][0][1]), cv2.FONT_HERSHEY_PLAIN, 2, color, thickness=4, lineType=cv2.CV_AA)
+                if visualizing:
+                    cv2.putText(frame, str(maxdist), (pts[0][0][0],pts[0][0][1]), cv2.FONT_HERSHEY_PLAIN, 2, color, thickness=4, lineType=cv2.CV_AA)
                 if skipall == False:
                     newframethresh.append((pts[0][0][0],pts[0][0][1]))
             else:
                 color = (0,255,255)
-            cv2.polylines(frame,[pts],True,color, 5)
+            if visualizing:
+                cv2.polylines(frame,[pts],True,color, 5)
         else:
-            pass
-            #cv2.polylines(frame,[pts],True,(0,0,255), 5)
-    cv2.imshow('frame',frame)
+            if visualizing and drawAllEdges:
+                cv2.polylines(frame,[pts],True,(0,0,255), 1)
+    if visualizing:
+        cv2.imshow('frame',frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
     framethresh = newframethresh
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-cv2.destroyAllWindows()
+if visualizing:
+    cv2.destroyAllWindows()
