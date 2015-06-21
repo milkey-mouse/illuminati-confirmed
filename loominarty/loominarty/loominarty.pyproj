@@ -22,6 +22,9 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="peladophobian.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="loominarty.py" />
   </ItemGroup>
   <PropertyGroup>
