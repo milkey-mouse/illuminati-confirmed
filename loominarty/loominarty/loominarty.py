@@ -88,9 +88,12 @@ while True:
                     dists.append(math.hypot(x[1] - x[0], y[1] - y[0]))
                 min_length = min(dists)
                 max_length = max(dists)
+                theoretical_area = (1.0/4.0) * math.sqrt(3.0) * (max_length**2.0) #this finds the ideal area if the shape were a perfectly equilateral triangle
+                s = sum(dists) / 2.0
+                real_area = math.sqrt(s*(s-dists[0])*(s-dists[1])*(s-dists[2]))
                 maxdist = (max_length/min_length)
                 perimeter = cv2.arcLength(cnt,True)
-                if maxdist < 1.05 and (area / perimeter) > 5:
+                if maxdist < 1.065 and (area / perimeter) > 5:
                     color = (0,127,255)
                     for ellipse in framethresh:
                         y = pts[0][0]
@@ -106,10 +109,7 @@ while True:
                             skipall = True
                             break
                     if visualizing:
-                        ndists = ""
-                        for dist in dists:
-                            ndists += str(round(dist)) + "\n"
-                        cv2.putText(frame, ndists, (pts[0][0][0],pts[0][0][1]), cv2.FONT_HERSHEY_PLAIN, 2, color, thickness=4, lineType=cv2.CV_AA)
+                        cv2.putText(frame, str(real_area/theoretical_area), (pts[0][0][0],pts[0][0][1]), cv2.FONT_HERSHEY_PLAIN, 2, color, thickness=4, lineType=cv2.CV_AA)
                     if skipall == False:
                         newframethresh.append((pts[0][0][0],pts[0][0][1]))
                 else:
