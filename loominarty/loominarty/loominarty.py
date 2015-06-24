@@ -3,11 +3,16 @@ import math
 import time
 import numpy as np
 import peladophobian
-#qqqcapture = cv2.VideoCapture("space_weird_thing.mp4")
-capture = cv2.VideoCapture("dhmis.mp4")
+#capture = cv2.VideoCapture("space_weird_thing.mp4")
+#capture = cv2.VideoCapture("dhmis.mp4")
+capture = cv2.VideoCapture("loominarty.mp4")
+#capture = cv2.VideoCapture("2minarty.mp4")
 #capture = cv2.VideoCapture(2)
 visualizing = True
 drawAllEdges = True
+announceTriangles = True
+bluramt = 3
+distthresh = 1.35
 framethresh = [(-200,-200)]
 lastsucceeded = (-200,-200)
 future = time.time() + 1
@@ -31,11 +36,10 @@ while True:
                     break
             skipall = False
         if len(framethresh) == 0:
-            for i in range(1,3):
-                flag, frame = capture.read()
-                fps += 1
-                if flag == 0:
-                    break
+            flag, frame = capture.read()
+            fps += 1
+            if flag == 0:
+                break
         flag, frame = capture.read() #Flag returns 1 for success, 0 for failure. Frame is the currently processed frame
         if flag == 0:
             break
@@ -70,7 +74,7 @@ while True:
         newframethresh = []
         if flag == 0: #Something is wrong with your data, or the end of the video file was reached
             break
-        frame = cv2.blur(frame, (3,3))
+        frame = cv2.blur(frame, (bluramt,bluramt))
         bframe = cv2.Canny(frame,30,200)
         contours,hierarchy = cv2.findContours(bframe, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         skipall = False
@@ -79,29 +83,29 @@ while True:
             approx = cv2.approxPolyDP(cnt,epsilon,True)
             pts = approx.reshape((-1,1,2))
             if len(approx) == 3:
-                area = cv2.contourArea(cnt) #750 threshold
                 has_dists = True
                 dists = []
                 for lidx,lidy in [(0,1),(1,2),(2,0)]:
                     x = pts[lidx][0]
                     y = pts[lidy][0] 
-                    dists.append(math.hypot(x[1] - x[0], y[1] - y[0]))
+                    dists.append(abs(math.hypot(*y-x)))
                 min_length = min(dists)
                 max_length = max(dists)
-                theoretical_area = (1.0/4.0) * math.sqrt(3.0) * (max_length**2.0) #this finds the ideal area if the shape were a perfectly equilateral triangle
+                #real_area = math.sqrt(s*(s-dists[0])*(s-dists[1])*(s-dists[2]))
+                #theoretical_area = (1.0/4.0) * math.sqrt(3.0) * (max_length**2.0) #this finds the ideal area if the shape were a perfectly equilateral triangle
+                #theoretically one could do something like (real_area/theoretical_area) to see another value of equilateralness
                 s = sum(dists) / 2.0
-                real_area = math.sqrt(s*(s-dists[0])*(s-dists[1])*(s-dists[2]))
                 maxdist = (max_length/min_length)
-                perimeter = cv2.arcLength(cnt,True)
-                if maxdist < 1.065 and (area / perimeter) > 5:
+                if maxdist < distthresh:
                     color = (0,127,255)
                     for ellipse in framethresh:
                         y = pts[0][0]
                         if visualizing:
                             cv2.circle(frame, ellipse, 75, (128,255,128))
-                        if abs(math.hypot(ellipse[1] - ellipse[0], y[1] - y[0])) > 75 and abs(math.hypot(lastsucceeded[1] - lastsucceeded[0], y[1] - y[0])) > 75:
+                        if abs(math.hypot(*y-ellipse)) > 75 and abs(math.hypot(*y-lastsucceeded)) > 75:
                             color = (0,255,0)
-                            narrator.mlgsay("Wake up sheeple. We have a triangle. It must be the work of the Illuminati.")
+                            if announceTriangles:
+                                narrator.mlgsay("Wake up sheeple. We have a triangle. It must be the work of the Illuminati.")
                             triangles += 1
                             newframethresh = [(-300,-300)]
                             framethresh = []
@@ -109,7 +113,7 @@ while True:
                             skipall = True
                             break
                     if visualizing:
-                        cv2.putText(frame, str(real_area/theoretical_area), (pts[0][0][0],pts[0][0][1]), cv2.FONT_HERSHEY_PLAIN, 2, color, thickness=4, lineType=cv2.CV_AA)
+                        cv2.putText(frame, str(maxdist), (pts[0][0][0],pts[0][0][1]), cv2.FONT_HERSHEY_PLAIN, 2, color, thickness=4, lineType=cv2.CV_AA)
                     if skipall == False:
                         newframethresh.append((pts[0][0][0],pts[0][0][1]))
                 else:
@@ -120,8 +124,11 @@ while True:
                 if visualizing and drawAllEdges:
                     cv2.polylines(frame,[pts],True,(0,0,255), 1)
         framethresh = newframethresh
-    except:
-        pass
+    except Exception, e:
+        if flag == 0:
+            break
+        else:
+            print e
     if visualizing:
         try:
             cv2.imshow('frame',frame)
