@@ -3,9 +3,9 @@ import math
 import time
 import numpy as np
 import peladophobian
-#capture = cv2.VideoCapture("space_weird_thing.mp4")
+capture = cv2.VideoCapture("space_weird_thing.mp4")
 #capture = cv2.VideoCapture("dhmis.mp4")
-capture = cv2.VideoCapture("loominarty.mp4")
+#capture = cv2.VideoCapture("loominarty.mp4")
 #capture = cv2.VideoCapture("2minarty.mp4")
 #capture = cv2.VideoCapture(2)
 visualizing = True
